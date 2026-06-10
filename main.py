@@ -4,9 +4,10 @@ Supports multi-language translation via deep-translator and TTS via gTTS.
 """
 
 import io
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse  # Added FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from deep_translator import GoogleTranslator
@@ -194,5 +195,5 @@ def text_to_speech(text: str, lang: str = "en"):
 
 @app.get("/", include_in_schema=False)
 def root():
-    """Health check / root."""
-    return {"status": "ok", "message": "Language Translation API is running. Visit /docs for API docs."}
+    """Serves the frontend website homepage instead of a JSON health status."""
+    return FileResponse("index.html")
