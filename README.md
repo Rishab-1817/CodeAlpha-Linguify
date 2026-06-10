@@ -17,7 +17,7 @@ A futuristic AI-powered translator supporting **100+ languages** with real-time 
 - 📱 Mobile Friendly
 
 ## 🚀 Live Demo
-
+https://linguify-svbg.onrender.com
 
 
 ## 🛠️ Tech Stack
