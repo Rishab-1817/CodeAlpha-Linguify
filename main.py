@@ -1,19 +1,17 @@
-import os
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from googletrans import Translator, LANGUAGES
+from deep_translator import GoogleTranslator
+from gtts import gTTS
+import io
+from fastapi.responses import StreamingResponse
+import os
 
-app = FastAPI(
-    title="Linguify API",
-    description="Backend API for CodeAlpha-Linguify Language Translation Application",
-    version="1.0.0"
-)
+app = FastAPI()
 
-# Enable CORS for frontend flexibility
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,88 +20,81 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 1. Mount the static directory for CSS and JS assets
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# 2. Configure the templates directory for HTML files
-templates = Jinja2Templates(directory="templates")
-
-# Initialize the Googletrans Translator
-translator = Translator()
-
-# Pydantic models for request/response validation
-class TranslationRequest(BaseModel):
+class TranslateRequest(BaseModel):
     text: str
-    src_lang: str = "auto"  # Default to auto-detect
-    dest_lang: str
+    source_lang: str
+    target_lang: str
 
-class TranslationResponse(BaseModel):
-    original_text: str
-    translated_text: str
-    src_lang: str
-    dest_lang: str
+# Language mapping
+LANGUAGES = {
+    'auto': 'Detect Language',
+    'en': 'English',
+    'es': 'Spanish',
+    'fr': 'French',
+    'de': 'German',
+    'it': 'Italian',
+    'pt': 'Portuguese',
+    'ru': 'Russian',
+    'ja': 'Japanese',
+    'ko': 'Korean',
+    'zh': 'Chinese',
+    'ar': 'Arabic',
+    'hi': 'Hindi',
+    'tr': 'Turkish',
+    'nl': 'Dutch',
+    'pl': 'Polish',
+    'vi': 'Vietnamese',
+    'th': 'Thai'
+}
 
-# --- FRONTEND ROUTES ---
-
-# Serve index.html at the root URL
-@app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
-
-
-# --- API ENDPOINTS ---
-
-@app.get("/api/health")
-async def health_check():
-    return {
-        "status": "ok", 
-        "message": "Language Translation API is running. Visit /docs for API docs."
-    }
+@app.get("/")
+async def root():
+    return {"status": "ok", "message": "Linguify API is running"}
 
 @app.get("/api/languages")
 async def get_languages():
-    """Returns a dictionary of all supported languages and their codes."""
-    return {"supported_languages": LANGUAGES}
+    return LANGUAGES
 
-@app.post("/api/translate", response_model=TranslationResponse)
-async def translate_text(request: TranslationRequest):
-    """Translates text from source language to destination language."""
-    if not request.text.strip():
-        raise HTTPException(status_code=400, detail="Text to translate cannot be empty.")
+@app.post("/api/translate")
+async def translate(request: TranslateRequest):
+    if not request.text or not request.text.strip():
+        raise HTTPException(status_code=400, detail="Text cannot be empty")
     
-    # Validate destination language code
-    if request.dest_lang not in LANGUAGES:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Invalid destination language code: '{request.dest_lang}'. Check /api/languages for valid codes."
-        )
-    
-    # Validate source language code if it's not set to 'auto'
-    if request.src_lang != "auto" and request.src_lang not in LANGUAGES:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Invalid source language code: '{request.src_lang}'. Use 'auto' or a valid code."
-        )
-
     try:
-        # Perform translation
-        result = translator.translate(
-            text=request.text, 
-            src=request.src_lang, 
-            dest=request.dest_lang
-        )
+        source = request.source_lang if request.source_lang != 'auto' else 'auto'
+        translator = GoogleTranslator(source=source, target=request.target_lang)
+        translated = translator.translate(request.text)
+        return {"translated_text": translated}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/tts")
+async def text_to_speech(text: str, lang: str):
+    if not text or not text.strip():
+        raise HTTPException(status_code=400, detail="Text cannot be empty")
+    
+    try:
+        tts_lang = lang if lang != 'auto' else 'en'
+        tts = gTTS(text=text, lang=tts_lang, slow=False)
         
-        return TranslationResponse(
-            original_text=request.text,
-            translated_text=result.text,
-            src_lang=result.src,
-            dest_lang=result.dest
+        audio_bytes = io.BytesIO()
+        tts.write_to_fp(audio_bytes)
+        audio_bytes.seek(0)
+        
+        return StreamingResponse(
+            audio_bytes,
+            media_type="audio/mpeg",
+            headers={"Content-Disposition": "attachment; filename=speech.mp3"}
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Translation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"TTS error: {str(e)}")
 
-if __name__ == "__main__":
-    import uvicorn
-    # Read port from environment variable for hosting services like Railway
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+# Serve static files
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+    
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        if os.path.exists(f"static/{full_path}"):
+            return FileResponse(f"static/{full_path}")
+        return FileResponse("static/index.html")
