@@ -3,7 +3,7 @@
  * Handles: language population, translation, TTS, clipboard, history
  */
 
-const API_BASE = "";  // Empty string = use same origin as the website
+const API_BASE = "https://linguify-svbg.onrender.com";
 
 // ── DOM references ────────────────────────────────────────────────
 const sourceLangSelect  = document.getElementById("sourceLangSelect");
