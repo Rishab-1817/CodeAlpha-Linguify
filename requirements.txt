@@ -1,0 +1,6 @@
+fastapi==0.111.0
+starlette==0.37.2
+uvicorn[standard]==0.29.0
+deep-translator==1.11.4
+gTTS==2.5.1
+python-multipart==0.0.9
