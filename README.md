@@ -40,9 +40,8 @@ uvicorn main:app --reload
 
 ## 📸 Screenshots
 
+<img width="1057" height="693" alt="image" src="https://github.com/user-attachments/assets/f650881e-c8d1-47e2-be1e-351064227861" />
 <img width="1224" height="875" alt="image" src="https://github.com/user-attachments/assets/7069f540-0cc5-4de5-af8c-5776ae5afd36" />
-<img width="1184" height="875" alt="image" src="https://github.com/user-attachments/assets/2cdbacb0-88fe-4d3c-b692-59dad38b5d05" />
-<img width="1126" height="440" alt="image" src="https://github.com/user-attachments/assets/2897e744-cca2-4671-8723-1e9d5df6aa7e" />
 
 
 ## 👨‍💻 Author
