@@ -49,6 +49,9 @@ LANGUAGES = {
 
 @app.get("/")
 async def root():
+    # Serve the index.html file from static folder
+    if os.path.exists("static/index.html"):
+        return FileResponse("static/index.html")
     return {"status": "ok", "message": "Linguify API is running"}
 
 @app.get("/api/languages")
@@ -89,12 +92,5 @@ async def text_to_speech(text: str, lang: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"TTS error: {str(e)}")
 
-# Serve static files
-if os.path.exists("static"):
-    app.mount("/static", StaticFiles(directory="static"), name="static")
-    
-    @app.get("/{full_path:path}")
-    async def serve_frontend(full_path: str):
-        if os.path.exists(f"static/{full_path}"):
-            return FileResponse(f"static/{full_path}")
-        return FileResponse("static/index.html")
+# Mount static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
