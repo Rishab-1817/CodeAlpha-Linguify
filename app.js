@@ -3,7 +3,7 @@
  * Handles: language population, translation, TTS, clipboard, history
  */
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "";  // Empty string = use same origin as the website
 
 // ── DOM references ────────────────────────────────────────────────
 const sourceLangSelect  = document.getElementById("sourceLangSelect");
